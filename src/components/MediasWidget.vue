@@ -43,7 +43,7 @@
                         v-on:click.native="onMediaClick(file)"
                         v-on:contextmenu.native.prevent="onContextMenu(file, $event)"
                         v-bind:file="file"
-                        v-bind:key="file.path"
+                        v-bind:key="file.resourceid"
                         class="animated fadeIn"
                     ></media-widget>
 
@@ -73,114 +73,119 @@
 
 <script>
 /* global $ */
-import { mapState } from 'vuex';
-import MediaWidget from './MediaWidget.vue';
+import { mapState } from "vuex";
+import MediaWidget from "./MediaWidget.vue";
 
 export default {
-    components: { MediaWidget },
-    data() {
-        return {
-            files: [],
-            loading: false,
-            error: false,
-            contextMenuFile: {},
-            contextMenuX: 0,
-            contextMenuY: 0,
-            showContextMenu: false
-        };
+  components: { MediaWidget },
+  data() {
+    return {
+      files: [],
+      loading: false,
+      error: false,
+      contextMenuFile: {},
+      contextMenuX: 0,
+      contextMenuY: 0,
+      showContextMenu: false
+    };
+  },
+  props: ["path"],
+  computed: {
+    ...mapState({
+      basePath: state => state.options.basePath
+    }),
+    mmc() {
+      return this.$root.$mmc;
     },
-    props: [ 'path' ],
-    computed: {
-        ...mapState({
-            basePath: state => state.options.basePath
-        }),
-        mmc() {
-            return this.$root.$mmc;
-        },
-        relPath() {
-            return this.path.replace(this.basePath, '');
-        },
-        pathUp() {
-            let path = '', index = this.relPath.lastIndexOf('/');
-            if (index>-1) {
-                path = this.relPath.slice(0, index);
-            }
-            return this.basePath + path;
-        },
-        contextMenuStyle() {
-            return 'left: '+this.contextMenuX+'px; top:'+this.contextMenuY+'px;';
-        }
+    relPath() {
+      return this.path.replace(this.basePath, "");
     },
-    watch: {
-        path: function() {
-            this.refresh();
-        }
+    pathUp() {
+      let path = "",
+        index = this.relPath.lastIndexOf("/");
+      if (index > -1) {
+        path = this.relPath.slice(0, index);
+      }
+      return this.basePath + path;
     },
-    mounted() {
-        this.refresh();
-    },
-    methods: {
-        refresh() {
-            this.loading = true;
-            this.error = false;
-            
-            this.$api.list(this.path)
-                .then(response => {
-                    if (Array.isArray(response.data)) {
-                        response.data.sort((a, b) => {
-                            let as = a.type +'/'+ a.basename,
-                                bs = b.type +'/'+ b.basename;
-                            return as.localeCompare(bs)
-                        });
-                        this.files = response.data;
-                    }
-                    this.loading = false;
-                }, error => {
-                    // TODO
-                    this.error = error.toString();
-                    this.files = [];
-                    this.loading = false;
-                });
-        },
-        browse(path) {
-            this.mmc.path = path;
-        },
-
-        onMediaClick(file) {
-            if (file.type=='dir') {
-                this.browse(file.path);
-            } else {
-                let mmc = this.mmc;
-                if (mmc.isSelected(file)) {
-                    mmc.unselectFile(file);
-                } else {
-                    mmc.selectFile(file);
-                }
-            }
-        },
-
-        onDocumentClick(e) {
-            this.toggleContextMenuOff();
-        },
-        onContextMenu(file, e) {
-            let clientRect = this.mmc.$el.getBoundingClientRect();
-            this.contextMenuFile = file;
-            this.contextMenuX = e.clientX - clientRect.left;
-            this.contextMenuY = e.clientY - clientRect.top;
-            this.toggleContextMenuOn();
-        },
-        toggleContextMenuOn() {
-            this.showContextMenu = true;
-            document.addEventListener('click', this.onDocumentClick);
-        },
-        toggleContextMenuOff() {
-            this.contextMenuFile = {};
-            this.contextMenuX = 0;
-            this.contextMenuY = 0;
-            this.showContextMenu = false;
-            document.removeEventListener('click', this.onDocumentClick);
-        }
+    contextMenuStyle() {
+      return (
+        "left: " + this.contextMenuX + "px; top:" + this.contextMenuY + "px;"
+      );
     }
+  },
+  watch: {
+    path: function() {
+      this.refresh();
+    }
+  },
+  mounted() {
+    this.refresh();
+  },
+  methods: {
+    refresh() {
+      this.loading = true;
+      this.error = false;
+
+      this.$api.list(this.path).then(
+        response => {
+          if (Array.isArray(response.data)) {
+            response.data.sort((a, b) => {
+              let as = a.type + "/" + a.basename,
+                bs = b.type + "/" + b.basename;
+              return as.localeCompare(bs);
+            });
+            this.files = response.data;
+          }
+          this.loading = false;
+        },
+        error => {
+          // TODO
+          this.error = error.toString();
+          this.files = [];
+          this.loading = false;
+        }
+      );
+    },
+    browse(path) {
+      this.mmc.path = path;
+    },
+
+    onMediaClick(file) {
+      if (file.type == "dir") {
+        this.browse(file.path);
+      } else {
+        let mmc = this.mmc;
+        if (mmc.isSelected(file)) {
+          mmc.unselectFile(file);
+        } else {
+          mmc.selectFile(file);
+        }
+      }
+    },
+
+    onDocumentClick(e) {
+      this.toggleContextMenuOff();
+    },
+    onContextMenu(file, e) {
+      let clientRect = this.mmc.$el.getBoundingClientRect();
+      this.contextMenuFile = file;
+      this.contextMenuX = e.clientX - clientRect.left;
+      this.contextMenuY = e.clientY - clientRect.top;
+      this.toggleContextMenuOn();
+    },
+    toggleContextMenuOn() {
+      this.showContextMenu = true;
+      document.addEventListener("click", this.onDocumentClick);
+    },
+    toggleContextMenuOff() {
+      this.contextMenuFile = {};
+      this.contextMenuX = 0;
+      this.contextMenuY = 0;
+      this.showContextMenu = false;
+      document.removeEventListener("click", this.onDocumentClick);
+    }
+  }
 };
 </script>
 
@@ -188,37 +193,37 @@ export default {
 $filesMargin: 5px;
 
 .medias {
-    margin: (-$filesMargin) (-$filesMargin) 15px (-$filesMargin);
-    .file {
-        margin: $filesMargin;
-    }
+  margin: (-$filesMargin) (-$filesMargin) 15px (-$filesMargin);
+  .file {
+    margin: $filesMargin;
+  }
 }
 
 .context-menu {
-    position: absolute;
-    background-color: #fff;
-    box-shadow: 0 1px 5px rgba(0,0,0,0.5);
-    z-index: 100;
+  position: absolute;
+  background-color: #fff;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.5);
+  z-index: 100;
 
-    ul {
-        padding-left: 0;
-        margin-bottom: 0;
-        list-style: none;
-    }
+  ul {
+    padding-left: 0;
+    margin-bottom: 0;
+    list-style: none;
+  }
 
-    li {
-        display: block;
-        a {
-            display: block;
-            padding: 6px 15px;
-            font-weight: normal;
-            color: #333;
-            text-decoration: none;
-            white-space: nowrap;
-            &:hover {
-                background-color: #eee;
-            }
-        }
+  li {
+    display: block;
+    a {
+      display: block;
+      padding: 6px 15px;
+      font-weight: normal;
+      color: #333;
+      text-decoration: none;
+      white-space: nowrap;
+      &:hover {
+        background-color: #eee;
+      }
     }
+  }
 }
 </style>
