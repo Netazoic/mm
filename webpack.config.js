@@ -3,12 +3,23 @@ var path = require('path')
 var ExtractTextPlugin = require("extract-text-webpack-plugin")
 
 var PROD = (process.env.NODE_ENV === 'production')
+var DEV = (process.env.NODE_ENV === 'development')
+var DEVHR = (process.env.NODE_ENV === 'dev_hr')
 
 module.exports = {
     entry: './src/main.js',
     output: {
-        path: path.resolve(__dirname, './dist'),
-        publicPath: '/dist/',
+        path: PROD ? path.resolve(__dirname, './dist/prd') 
+        		: DEV 
+        			? path.resolve(__dirname, './dist/dev') 
+        			: path.resolve(__dirname, './dist'),
+// publicPath: '/dist/',
+        publicPath:
+            PROD
+                ? '/app/mm/dist/prd'
+                : DEV
+                	? '/app/mm/dist/dev'  // standard development, devw
+                	: '/dist',    // hot-reload, devhr
         filename: PROD ? 'mm.min.js' : 'mm.js',
         // https://github.com/webpack/webpack/issues/3929
         library: undefined,
@@ -92,6 +103,10 @@ module.exports = {
         hints: false
     },
     devtool: '#eval-source-map'
+}
+
+if (DEV) {
+	module.exports.devtool = '#source-map'
 }
 
 if (PROD) {
